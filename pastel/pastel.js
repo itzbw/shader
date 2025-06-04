@@ -1,21 +1,13 @@
 const canvas = document.getElementById("canvas");
-const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-let currentMode = 0;
+const gl =
+  canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 
+// Global variables for the shader program
 let program;
-let timeLocation, resolutionLocation, mouseLocation, modeLocation;
-let mouseX = 0,
-  mouseY = 0;
+let timeLocation, resolutionLocation;
 let frameCount = 0;
 let lastTime = performance.now();
 let startTime = performance.now();
-
-function setMode(mode) {
-  currentMode = mode;
-  for (let i = 0; i < 3; i++) {
-    document.getElementById("btn" + i).classList.toggle("active", i === mode);
-  }
-}
 
 if (!gl) {
   document.body.innerHTML =
@@ -50,7 +42,7 @@ function compileShader(source, type) {
 async function initializeShaders() {
   try {
     const vertexShaderSource = await loadShader("shaders/vertex.glsl");
-    const fragmentShaderSource = await loadShader("shaders/crystalline.frag");
+    const fragmentShaderSource = await loadShader("shaders/pastel.frag");
 
     const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
     const fragmentShader = compileShader(
@@ -72,11 +64,11 @@ async function initializeShaders() {
       throw new Error("Program linking failed");
     }
 
-    const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+    const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
 
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 
     const positionLocation = gl.getAttribLocation(program, "position");
     gl.enableVertexAttribArray(positionLocation);
@@ -84,8 +76,6 @@ async function initializeShaders() {
 
     timeLocation = gl.getUniformLocation(program, "t");
     resolutionLocation = gl.getUniformLocation(program, "r");
-    mouseLocation = gl.getUniformLocation(program, "m");
-    modeLocation = gl.getUniformLocation(program, "mode");
 
     document.getElementById("loading").style.display = "none";
 
@@ -95,27 +85,17 @@ async function initializeShaders() {
   }
 }
 
-canvas.addEventListener("mousemove", (e) => {
-  const rect = canvas.getBoundingClientRect();
-  mouseX = e.clientX - rect.left;
-  mouseY = rect.height - (e.clientY - rect.top);
-});
-
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = 800;
+  canvas.height = 600;
   gl.viewport(0, 0, canvas.width, canvas.height);
-
-  if (mouseX === 0 && mouseY === 0) {
-    mouseX = canvas.width / 2;
-    mouseY = canvas.height / 2;
-  }
 }
+
 window.addEventListener("resize", resize);
 resize();
 
 function render() {
-  if (!program) return; 
+  if (!program) return;
 
   const currentTime = performance.now();
   const time = (currentTime - startTime) / 1000;
@@ -127,11 +107,12 @@ function render() {
     lastTime = currentTime;
   }
 
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+
   gl.useProgram(program);
   gl.uniform1f(timeLocation, time);
   gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
-  gl.uniform2f(mouseLocation, mouseX, mouseY);
-  gl.uniform1f(modeLocation, currentMode);
 
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 

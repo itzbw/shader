@@ -1,27 +1,20 @@
 const canvas = document.getElementById("canvas");
 const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-let currentMode = 0;
 
 let program;
-let timeLocation, resolutionLocation, mouseLocation, modeLocation;
+let timeLocation, resolutionLocation, mouseLocation;
 let mouseX = 0,
   mouseY = 0;
 let frameCount = 0;
 let lastTime = performance.now();
 let startTime = performance.now();
 
-function setMode(mode) {
-  currentMode = mode;
-  for (let i = 0; i < 3; i++) {
-    document.getElementById("btn" + i).classList.toggle("active", i === mode);
-  }
-}
-
 if (!gl) {
   document.body.innerHTML =
     '<div class="error">WebGL not supported in your browser</div>';
 }
 
+// Shader loading function
 async function loadShader(url) {
   try {
     const response = await fetch(url);
@@ -50,7 +43,7 @@ function compileShader(source, type) {
 async function initializeShaders() {
   try {
     const vertexShaderSource = await loadShader("shaders/vertex.glsl");
-    const fragmentShaderSource = await loadShader("shaders/crystalline.frag");
+    const fragmentShaderSource = await loadShader("shaders/fur_texture.frag");
 
     const vertexShader = compileShader(vertexShaderSource, gl.VERTEX_SHADER);
     const fragmentShader = compileShader(
@@ -85,7 +78,6 @@ async function initializeShaders() {
     timeLocation = gl.getUniformLocation(program, "t");
     resolutionLocation = gl.getUniformLocation(program, "r");
     mouseLocation = gl.getUniformLocation(program, "m");
-    modeLocation = gl.getUniformLocation(program, "mode");
 
     document.getElementById("loading").style.display = "none";
 
@@ -115,7 +107,7 @@ window.addEventListener("resize", resize);
 resize();
 
 function render() {
-  if (!program) return; 
+  if (!program) return;
 
   const currentTime = performance.now();
   const time = (currentTime - startTime) / 1000;
@@ -131,7 +123,6 @@ function render() {
   gl.uniform1f(timeLocation, time);
   gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
   gl.uniform2f(mouseLocation, mouseX, mouseY);
-  gl.uniform1f(modeLocation, currentMode);
 
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
